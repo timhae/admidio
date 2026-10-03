@@ -1,0 +1,22 @@
+name: "update"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0"
+permissions:
+  pull-requests: "write"
+  contents: "write"
+jobs:
+  flake-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31.11.0
+      - run: nix flake update
+      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          commit-message: "chore(deps): update flake lock"
+          title: "chore(deps): update flake lock"
+          branch: flake-updates
+          delete-branch: true
+          token: ${{ secrets.ADMIDIO_UPDATE_ACTION_PR }} # needs to be created by human to trigger action runs
