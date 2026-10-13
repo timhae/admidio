@@ -2,6 +2,7 @@
 
 namespace Admidio\Messages\Service;
 
+use Admidio\Events\Entity\Event;
 use Admidio\Infrastructure\Language;
 use Admidio\Infrastructure\Database;
 use Admidio\Infrastructure\Email;
@@ -84,6 +85,7 @@ class MessageService
 
         if ($messageType === Message::MESSAGE_TYPE_EMAIL) {
             $email = new Email();
+            $additionalPlaceholders = array();
 
             foreach ($recipients as $recipient) {
                 if (str_contains($recipient, ':')) {
@@ -114,6 +116,16 @@ class MessageService
                         (string)Language::translateIfTranslationStrId($row['rol_name'])
                     );
                     $email->addRecipientsByRole((string)$group['uuid'], (int)$group['status']);
+
+                    // if the role is an event's participant role, provide the event details as placeholders
+                    $event = new Event($this->db);
+                    if ($event->readDataByRoleId((int)$row['rol_id']) && $event->isVisible()) {
+                        $additionalPlaceholders = array(
+                            '#event_title#' => (string)$event->getValue('dat_headline'),
+                            '#event_date#' => $event->getDateTimePeriod(),
+                            '#event_location#' => (string)$event->getValue('dat_location')
+                        );
+                    }
                 } else {
                     $user = new User($this->db, $gProfileFields);
                     $user->readDataByUuid($recipient);
@@ -216,7 +228,8 @@ class MessageService
                 $senderName,
                 $senderEmail,
                 (string)$gCurrentUser->getValue('usr_uuid'),
-                $receiverName
+                $receiverName,
+                $additionalPlaceholders
             );
 
             /*

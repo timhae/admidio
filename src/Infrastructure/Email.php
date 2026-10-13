@@ -512,9 +512,11 @@ class Email extends PHPMailer
      * @param string $senderEmail The email address of the sender
      * @param string $senderUuid The unique ID of the sender.
      * @param string $recipients List with firstname and lastname of all recipients of this mail
+     * @param array<string,string> $additionalPlaceholders Optional extra placeholders (e.g. event details)
+     *                                                   that are replaced in the template and the message text.
      * @throws \Admidio\Infrastructure\Exception
      */
-    public function setTemplateText(string $text, string $senderName, string $senderEmail, string $senderUuid, string $recipients): void
+    public function setTemplateText(string $text, string $senderName, string $senderEmail, string $senderUuid, string $recipients, array $additionalPlaceholders = array()): void
     {
         global $gValidLogin, $gCurrentOrganization, $gSettingsManager, $gL10n;
 
@@ -533,8 +535,11 @@ class Email extends PHPMailer
         // replace all line feeds within the mailtext into simple breaks because only those are valid within mails
         $text = str_replace("\r\n", "\n", $text);
 
+        // replace optional placeholders (e.g. event details) within the composed message text
+        $text = StringUtils::strMultiReplace($text, $additionalPlaceholders);
+
         // replace parameters in email template
-        $replaces = array(
+        $replaces = array_merge(array(
             '#sender#' => $senderName,
             '#sender_name#' => $senderName,
             '#sender_email#' => $senderEmail,
@@ -545,7 +550,7 @@ class Email extends PHPMailer
             '#organization_name#' => $gCurrentOrganization->getValue('org_longname'),
             '#organization_shortname#' => $gCurrentOrganization->getValue('org_shortname'),
             '#organization_website#' => $gCurrentOrganization->getValue('org_homepage')
-        );
+        ), $additionalPlaceholders);
         $emailHtmlText = StringUtils::strMultiReplace($emailTemplateText, $replaces);
 
         // now remove HTML und CSS from template
