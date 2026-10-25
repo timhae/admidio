@@ -742,12 +742,14 @@ in
     services.phpfpm.pools.${pool} = {
       inherit user group;
       phpPackage = php;
-      phpOptions = ''
-        upload_max_filesize = ${cfg.maxUploadSize}
-        post_max_size = ${cfg.maxUploadSize}
-        date.timezone = ${cfg.timezone}
-        ${optionalString (dbSocket != null) "pdo_mysql.default_socket = ${dbSocket}"}
-      '';
+      phpOptions = {
+        upload_max_filesize = cfg.maxUploadSize;
+        post_max_size = cfg.maxUploadSize;
+        "date.timezone" = cfg.timezone;
+      }
+      // optionalAttrs (dbSocket != null) {
+        "pdo_mysql.default_socket" = dbSocket;
+      };
       settings = {
         "listen.owner" = config.services.nginx.user;
         "listen.group" = "root";
